@@ -1,0 +1,7 @@
+node_modules/
+certs/*.key
+certs/*.crt
+lambda-deploy/node_modules/
+notification-deploy/node_modules/
+*.zip
+.env

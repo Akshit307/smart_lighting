@@ -1,0 +1,25 @@
+{
+  "name": "smart_lighting_iot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1121.0",
+    "@aws-sdk/client-sns": "^3.1127.0",
+    "@aws-sdk/client-sqs": "^3.1121.0",
+    "@aws-sdk/lib-dynamodb": "^3.1121.0",
+    "aws-crt": "^1.33.1",
+    "aws-iot-device-sdk-v2": "^1.28.0",
+    "mqtt": "^5.15.2"
+  },
+  "allowScripts": {
+    "aws-crt@1.33.1": true
+  }
+}

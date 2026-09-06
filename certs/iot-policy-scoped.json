@@ -1,0 +1,20 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "iot:Connect",
+      "Resource": "arn:aws:iot:ap-southeast-2:669394141948:client/property_001_living_room_hub"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["iot:Publish", "iot:Receive"],
+      "Resource": "arn:aws:iot:ap-southeast-2:669394141948:topic/bridge/smarthome/property_001/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iot:Subscribe",
+      "Resource": "arn:aws:iot:ap-southeast-2:669394141948:topicfilter/bridge/smarthome/property_001/*"
+    }
+  ]
+}
