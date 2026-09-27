@@ -82,3 +82,15 @@ Requires a local Mosquitto broker running on `localhost:1883`, and AWS credentia
 ## Project plan
 
 See [`docs/distinction_plan.pdf`](docs/distinction_plan.pdf) for the full requirements analysis, data flow diagram, testing plan, and implementation plan.
+
+## High Distinction extension: edge aggregation
+
+Distinction testing found that a near-instantaneous 5,000-message burst got *slower* after Lambda-side scaling, because Lambda's SQS pollers start at 5 concurrent invokes and scale up gradually. The HD work tackles this at the source by reducing the number of messages the cloud has to handle:
+
+- `edge/batcher.js` — edge aggregator: coalesces device events into batch envelopes, flushing on size (`maxBatch`, default 25), time (`maxWaitMs`, default 100ms) or immediately for urgent events (manual switch overrides).
+- `edge_gateway.js` — uses the batcher by default (`BATCHING=off` restores per-message forwarding); envelopes go to `bridge/smarthome/<propertyId>/batch`, which the existing IoT Rule already routes.
+- `lambda-deploy/index.js` — LightingControlFunction accepts raw events or envelopes, writes state with DynamoDB `BatchWriteItem` (25 per call, retries unprocessed items), reports partial batch failures, and logs per-event latency (`[LATENCY] runId=...`) plus a per-invocation summary (`[INVOCATION] ...`).
+- `notification-deploy/`, `scheduling-deploy/` — unwrap envelopes so they keep working on batched traffic.
+- `load_test.js` — `--mode raw|batched`, `--batch`, `--wait`, `--duration` (sustained load), `--run` (run ID).
+- `latency_report.js` — pulls p50/p95/p99, invocation count and failures for a run from CloudWatch Logs Insights.
+- `run_experiments.js` — runs the full experiment matrix and writes `results/runs.jsonl` + `results/latency.jsonl`.

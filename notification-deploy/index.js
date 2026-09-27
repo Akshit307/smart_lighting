@@ -14,17 +14,35 @@ exports.handler = async (event) => {
     event.Records.map(record => processRecord(record))
   );
 
-  const failures = results.filter(r => r.status === 'rejected');
-  if (failures.length > 0) {
-    console.error(`[Notification Lambda] ${failures.length} message(s) failed`);
-    throw new Error(`${failures.length} messages failed processing`);
+  const batchItemFailures = [];
+  results.forEach((result, i) => {
+    if (result.status === 'rejected') {
+      batchItemFailures.push({ itemIdentifier: event.Records[i].messageId });
+    }
+  });
+
+  if (batchItemFailures.length > 0) {
+    console.error(`[Notification Lambda] ${batchItemFailures.length} message(s) failed`);
   }
 
-  return { statusCode: 200, processed: event.Records.length };
+  return { batchItemFailures };
 };
 
+// Accepts a raw device event or an edge batch envelope { type: 'batch', events: [...] }
+function extractEvents(body) {
+  const parsed = JSON.parse(body);
+  if (parsed && parsed.type === 'batch' && Array.isArray(parsed.events)) return parsed.events;
+  return [parsed];
+}
+
 async function processRecord(record) {
-  const payload = JSON.parse(record.body);
+  // events inside one envelope are processed in order (they may refer to the same room)
+  for (const payload of extractEvents(record.body)) {
+    await processEvent(payload);
+  }
+}
+
+async function processEvent(payload) {
 
   // Only care about motion events for occupancy tracking
   if (payload.motion === undefined) {

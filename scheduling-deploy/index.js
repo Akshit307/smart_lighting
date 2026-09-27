@@ -26,8 +26,21 @@ exports.handler = async (event) => {
   return { batchItemFailures };
 };
 
+// Accepts a raw device event or an edge batch envelope { type: 'batch', events: [...] }
+function extractEvents(body) {
+  const parsed = JSON.parse(body);
+  if (parsed && parsed.type === 'batch' && Array.isArray(parsed.events)) return parsed.events;
+  return [parsed];
+}
+
 async function processRecord(record) {
-  const payload = JSON.parse(record.body);
+  // events inside one envelope are processed in order (they may refer to the same room)
+  for (const payload of extractEvents(record.body)) {
+    await processEvent(payload);
+  }
+}
+
+async function processEvent(payload) {
 
   if (payload.overrideState === undefined) {
     return;
