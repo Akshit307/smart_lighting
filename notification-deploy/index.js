@@ -24,8 +24,7 @@ exports.handler = async (event) => {
 };
 
 async function processRecord(record) {
-  const snsEnvelope = JSON.parse(record.body);
-  const payload = JSON.parse(snsEnvelope.Message);
+  const payload = JSON.parse(record.body);
 
   // Only care about motion events for occupancy tracking
   if (payload.motion === undefined) {
@@ -51,8 +50,6 @@ async function processRecord(record) {
     return;
   }
 
-  // motion === false: check how long the room has reportedly been empty
-  // AND whether the light is currently on, for that room
   const lightDeviceKey = `light_${payload.propertyId}_${payload.roomId}`;
 
   const lightState = await ddbDocClient.send(new GetCommand({
@@ -66,11 +63,11 @@ async function processRecord(record) {
   }));
 
   if (!lightState.Item || lightState.Item.state !== 'on') {
-    return; // light isn't on, no anomaly possible
+    return;
   }
 
   if (!motionState.Item) {
-    return; // no occupancy history yet
+    return;
   }
 
   const lastOccupied = new Date(motionState.Item.lastUpdated).getTime();
@@ -78,8 +75,5 @@ async function processRecord(record) {
 
   if (now - lastOccupied > ANOMALY_THRESHOLD_MS) {
     console.warn(`[Notification Lambda] ANOMALY: Light ON in ${payload.roomId} (${payload.propertyId}) with no occupancy for over 2 hours!`);
-    // In a full deployment this would publish to a separate "alerts" SNS topic
-    // for email/SMS delivery. For this project, the CloudWatch log entry itself
-    // serves as the alert evidence.
   }
 }

@@ -8,6 +8,7 @@
         "sns:*",
         "sqs:*",
         "dynamodb:*",
+        "timestream:*",
         "lambda:*",
         "logs:*",
         "cloudwatch:*",

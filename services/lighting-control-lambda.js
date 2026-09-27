@@ -23,13 +23,12 @@ exports.handler = async (event) => {
 };
 
 async function processRecord(record) {
-  const snsEnvelope = JSON.parse(record.body);
-  const payload = JSON.parse(snsEnvelope.Message);
+  const payload = JSON.parse(record.body);
 
   console.log('[Lighting Control Lambda] Processing:', payload);
 
   const deviceId = payload.deviceId;
-  const state = payload.lightingCommand === 'on' ? 'on' : 'off';
+  const state = payload.motion === true ? 'on' : 'off';
 
   await ddbDocClient.send(new PutCommand({
     TableName: 'DeviceState',

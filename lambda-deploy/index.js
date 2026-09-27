@@ -15,7 +15,6 @@ exports.handler = async (event) => {
   const failures = results.filter(r => r.status === 'rejected');
   if (failures.length > 0) {
     console.error(`[Lighting Control Lambda] ${failures.length} message(s) failed`);
-    // Throwing here tells Lambda/SQS to retry the failed batch
     throw new Error(`${failures.length} messages failed processing`);
   }
 
@@ -23,13 +22,13 @@ exports.handler = async (event) => {
 };
 
 async function processRecord(record) {
-  const snsEnvelope = JSON.parse(record.body);
-  const payload = JSON.parse(snsEnvelope.Message);
+  const receivedAt = Date.now();
+  const payload = JSON.parse(record.body);
 
   console.log('[Lighting Control Lambda] Processing:', payload);
 
   const deviceId = payload.deviceId;
-  const state = payload.lightingCommand === 'on' ? 'on' : 'off';
+  const state = payload.motion === true ? 'on' : 'off';
 
   await ddbDocClient.send(new PutCommand({
     TableName: 'DeviceState',
@@ -43,5 +42,9 @@ async function processRecord(record) {
     }
   }));
 
+  const completedAt = Date.now();
+  const latencyMs = completedAt - payload.time;
+
   console.log(`[Lighting Control Lambda] Actuated: ${deviceId} -> ${state}`);
+  console.log(`[LATENCY] deviceId=${deviceId} publishedAt=${payload.time} receivedAt=${receivedAt} completedAt=${completedAt} latencyMs=${latencyMs}`);
 }

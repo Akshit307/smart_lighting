@@ -1,7 +1,16 @@
-const { SNSClient, PublishCommand } = require('@aws-sdk/client-sns');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { NodeHttpHandler } = require('@smithy/node-http-handler');
 
-const snsClient = new SNSClient({ region: 'ap-southeast-2' });
-const TOPIC_ARN = 'arn:aws:sns:ap-southeast-2:669394141948:SmartLightingEvents';
+const sqsClient = new SQSClient({
+  region: 'ap-southeast-2',
+  requestHandler: new NodeHttpHandler({
+    connectionTimeout: 5000,
+    socketTimeout: 5000,
+    maxSockets: 5000
+  })
+});
+
+const QUEUE_URL = 'https://sqs.ap-southeast-2.amazonaws.com/669394141948/LightingControlQueue';
 
 const NUM_MESSAGES = parseInt(process.argv[2]) || 50;
 
@@ -10,17 +19,16 @@ async function sendMessage(i) {
     deviceId: `load_test_device_${i}`,
     propertyId: `property_${Math.floor(i / 10)}`,
     roomId: `room_${i % 10}`,
-    lux: Math.random() < 0.5 ? 50 : 700,
-    time: Date.now(),
-    lightingCommand: Math.random() < 0.5 ? 'on' : 'off'
+    motion: Math.random() < 0.5,
+    time: Date.now()
   };
 
-  const command = new PublishCommand({
-    TopicArn: TOPIC_ARN,
-    Message: JSON.stringify(payload)
+  const command = new SendMessageCommand({
+    QueueUrl: QUEUE_URL,
+    MessageBody: JSON.stringify(payload)
   });
 
-  return snsClient.send(command);
+  return sqsClient.send(command);
 }
 
 async function runLoadTest() {
